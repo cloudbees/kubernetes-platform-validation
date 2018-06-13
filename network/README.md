@@ -1,0 +1,1 @@
+# [Validating Load Balancer And Ingress](ingress-validate.md)
