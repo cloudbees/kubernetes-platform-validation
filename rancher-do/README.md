@@ -320,7 +320,7 @@ The instructions that follow will require the IP of the NFS server. Please us Ra
 NFS_SERVER_ADDR=$RANCHER_IP
 ```
 
-Please follow the instructions in the [Creating An NFS Server](../storage/nfs/server.md). Once finished, please return to this document.
+Please follow the instructions in the [Creating An NFS Server](../storage/nfs/server.md) document. Once finished, please return to this document.
 
 ## Creating A Kubernetes Cluster
 
