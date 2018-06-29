@@ -196,7 +196,7 @@ curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/mas
 
 The output is as follows.
 
-```bash
+```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:

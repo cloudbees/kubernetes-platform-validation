@@ -118,7 +118,7 @@ If your operating system of choice is **Ubuntu**, please execute the command tha
 DISTRIBUTION=ubuntu-18-04-x64
 ```
 
-Otherwise, if you prefer CentOS, the command is as follows.
+Otherwise, if you prefer **CentOS**, the command is as follows.
 
 ```bash
 DISTRIBUTION=centos-7-x64
@@ -298,7 +298,7 @@ If you were quick, you might have seen the message stating that *this site canâ€
 
 Since we do not have the certificates, you will probably see a warning or an error. If using Chrome, you'll have to click the *ADVANCED* link, followed with *Proceed to [YOUR_IP].nip.io (unsafe)*. If you prefer a different browser, the process should be similar and I'm sure you'll know how to proceed.
 
-You should see Rancher's welcome screen asking you to create the initial administrative password. Feel free to choose any, and type of twice. Once finished, please click the *Continue* button.
+You should see Rancher's welcome screen asking you to create the initial administrative password. Feel free to choose any. Once finished, please click the *Continue* button.
 
 ![Figure 1: Rancher's welcome screen](img/rancher-welcome.png)
 
@@ -340,7 +340,7 @@ Type *master* as the *Name Prefix*, set *Count* to *3*, and select *etcd* and *C
 
 The only thing left, when defining master nodes, is to decide which node specifications we'll use. We do that through Node Templates.
 
-Please click the *Add Node Template* button (icon with a **+** sign). You'll have to type or, more likely, paste the DigitalOcean token we created earlier. Once inside the template screen, please select *New York 3* as the *Region*, select *2 GB RAM, 60 GB Disk, 2 vCPUs* as *Droplet Size*, and type *k8s* as the *Name*. The purpose of each of those fields should be self-explanatory.
+Please click the *Add Node Template* button (icon with the **+** sign). You'll have to type or, more likely, paste the DigitalOcean token we created earlier. Once inside the template screen, please select *New York 3* as the *Region*, select *2 GB RAM, 60 GB Disk, 2 vCPUs* as *Droplet Size*, and type *k8s* as the *Name*. The purpose of each of those fields should be self-explanatory.
 
 The only thing left to do, before we create the new template, is to choose the image. If you prefer **Ubuntu**, please select **Ubuntu 16.04 x64**. Similarly, **CentOS** users should pick **CentOS 7.X x64**.
 
@@ -501,167 +501,11 @@ Please follow the instructions from the [Validating Load Balancer And Ingress](.
 
 To create an NFS StorageClass, please follow the instructions in the [Creating StorageClass with NFS Client Provisioner](../storage/nfs/nfs-client-provisioner.md) document. Return here when finished.
 
+If applicable and desired, please follow the instructions from [Making A StorageClass Default](../storage/storage-default.md) document. Return here when finished.
+
 ## Validating StorageClasses
 
-The section that follows can be used to validate storage of any type.
-
-TODO: Continue
-
-```bash
-kubectl -n cjoc apply \
-    -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/sts/cje-test.yml
-```
-
-```
-statefulset "test" created
-service "test" created
-```
-
-```bash
-kubectl -n cjoc exec test-0 \
-    -- touch /tmp/something
-
-kubectl -n cjoc exec test-0 \
-    -- ls -l /tmp
-```
-
-```
--rw-r--r--    1 nobody   nobody           0 Jun  7 01:04 something
-```
-
-```bash
-kubectl -n cjoc delete pod test-0
-```
-
-```
-pod "test-0" deleted
-```
-
-```bash
-kubectl -n cjoc get pods
-```
-
-```
-NAME                                      READY     STATUS        RESTARTS   AGE
-nfs-client-provisioner-69688c76dd-b2bjj   1/1       Running       0          33m
-test-0                                    1/1       Terminating   0          3m
-```
-
-```bash
-kubectl -n cjoc get pods
-```
-
-```
-NAME                                      READY     STATUS    RESTARTS   AGE
-nfs-client-provisioner-69688c76dd-b2bjj   1/1       Running   0          34m
-test-0                                    1/1       Running   0          9s
-```
-
-```bash
-kubectl -n cjoc exec test-0 \
-    -- ls -l /tmp
-```
-
-```
--rw-r--r--    1 nobody   nobody           0 Jun  7 01:04 something
-```
-
-```bash
-kubectl -n cjoc delete \
-    -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/sts/cje-test.yml
-```
-
-```
-statefulset "test" deleted
-service "test" deleted
-```
-
-```bash
-kubectl -n cjoc \
-    delete pvc test-data-test-0
-```
-
-```
-persistentvolumeclaim "test-data-test-0" deleted
-```
-
-```bash
-kubectl -n build apply \
-    -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/sts/cje-test.yml
-```
-
-```
-statefulset "test" created
-service "test" created
-```
-
-```bash
-kubectl -n build exec test-0 \
-    -- touch /tmp/something
-
-kubectl -n build exec test-0 \
-    -- ls -l /tmp
-```
-
-```
--rw-r--r--    1 nobody   nobody           0 Jun  7 01:11 something
-```
-
-```bash
-kubectl -n build delete pod test-0
-```
-
-```
-pod "test-0" deleted
-```
-
-```bash
-kubectl -n build get pods
-```
-
-```
-NAME      READY     STATUS        RESTARTS   AGE
-test-0    1/1       Terminating   0          58s
-```
-
-```bash
-kubectl -n build get pods
-```
-
-```
-NAME      READY     STATUS    RESTARTS   AGE
-test-0    1/1       Running   0          3s
-```
-
-```bash
-kubectl -n build exec test-0 \
-    -- ls -l /tmp
-```
-
-```
--rw-r--r--    1 nobody   nobody           0 Jun  7 01:11 something
-```
-
-```bash
-kubectl -n build delete \
-    -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/sts/cje-test.yml
-```
-
-```
-statefulset "test" deleted
-service "test" deleted
-```
-
-```bash
-kubectl -n build \
-    delete pvc test-data-test-0
-```
-
-```
-persistentvolumeclaim "test-data-test-0" deleted
-```
-
-TODO: Speed tests
+Follow the instructions from the [Validating StorageClasses](../storage/storage-validate.md) document. Return here when finished.
 
 ## Installing CJE
 
