@@ -102,13 +102,8 @@ sudo swapoff -a
 sudo kubeadm init --pod-network-cidr 10.244.0.0/16
 ```
 
-The following is returned
-
-```bash
-"kubeadm join <address of the clustert>:6443 --token <token> --discovery-token-ca-cert-hash <hash>"
-```
-
-* Note: a token is supplied however these expire, to create a new token and hash, this is needed for adding new workers
+You will see instructions for attaching additional nodes to the cluster, although this can be used as displayed, tokens are only valid for 24 hours so
+depending on your time scales you will need to generate a token an a hash.
 
 * Create the token
 ```bash
@@ -117,10 +112,10 @@ kubeadm token create
 
 * Create the hash
 
-[source,block]
-----
+```bash
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
-----
+```
+
 
 * Install dns (Flannel)
 ```bash
@@ -188,7 +183,7 @@ sudo swapoff -a
 ```
 See above for generating a token and a hash
 ```bash
-sudo kubeadm join 192.168.1.163:6443 --token <token> --discovery-token-ca-cert-hash <hash>
+sudo kubeadm join <address of master>:6443 --token <token> --discovery-token-ca-cert-hash <hash>
 ```
 
 ## Install Ingress Controller
@@ -197,3 +192,28 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/mast
 
 
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+
+## Other points to note
+We had issues running without certs, in tests we are now running with a Public cert installed at the ingress, without "valid certs" we expereinced crumb errors.
+
+If running with NFS provisioner and the nfs server also running on centos, make sure you disable firewalld and selinux  on the NFS server as well as installing the nfs utils on each node
+
+```bash
+yum -y install nfs-utils
+```
+The container is unable to mount the volume without this being available on the host
+
+## Reverse Proxy load balancer
+Although we disabled selinux, for security firewalld was enabled, ensuring that both http and https protocols were allowed
+```bash
+firewall-cmd --zone=public --add-service=https
+firewall-cmd --zone=public --add-service=https
+```
+
+NGINX Configuration was keps minimal with ingress-proxy.conf set as follows, host ip and Kubernetes port mapping are exampled and
+need to be amended to suit your environment
+[source,php]
+----
+include::ingress-proxy.conf[]
+----
+
