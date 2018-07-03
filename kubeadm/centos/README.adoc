@@ -15,9 +15,9 @@ The examples were tested using centos 7 provisioned from the centos iso image (C
 ## Firewall and selinux
 This applies to all servers
 
-During testing bioth firewalld and selinux caused issues, make sure both are disabled as follows.
+During testing both firewalld and selinux caused issues, make sure both are disabled as follows.
 
-It is obviously a concerns for some customers so we should also do some work subsequently to configure with the required settings rather than simply disabling.
+It is obviously a concern for some customers, we should also do some work subsequently to configure with the required settings rather than simply disabling.
 
 ### firewalld
 To disable and stop
@@ -196,12 +196,13 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/mast
 ## Other points to note
 We had issues running without certs, in tests we are now running with a Public cert installed at the ingress, without "valid certs" we expereinced crumb errors.
 
-If running with NFS provisioner and the nfs server also running on centos, make sure you disable firewalld and selinux  on the NFS server as well as installing the nfs utils on each node
+If running with NFS provisioner and the nfs server also running on centos, make sure you disable firewalld and selinux  on the
+NFS server as well as installing the nfs utils on each node. The container is unable to mount the volume without this being available on the host.
 
 ```bash
 yum -y install nfs-utils
 ```
-The container is unable to mount the volume without this being available on the host
+
 
 ## Reverse Proxy load balancer
 Although we disabled selinux, for security firewalld was enabled, ensuring that both http and https protocols were allowed
@@ -212,8 +213,5 @@ firewall-cmd --zone=public --add-service=https
 
 NGINX Configuration was keps minimal with ingress-proxy.conf set as follows, host ip and Kubernetes port mapping are exampled and
 need to be amended to suit your environment
-[source,php]
-----
-include::ingress-proxy.conf[]
-----
 
+https://github.com/cloudbees/kubernetes-platform-validation/blob/master/kubeadm/centos/ingress-proxy.conf[ingress-proxy.conf]
