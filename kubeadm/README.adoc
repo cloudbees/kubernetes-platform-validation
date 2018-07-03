@@ -7,4 +7,4 @@ As you work through these examples, if you use a OS that is not documented, plea
 
 Examples so far are:
 
-* http://centos[centos]
+* https://github.com/cloudbees/kubernetes-platform-validation/tree/master/kubeadm/centos[centos]
