@@ -49,7 +49,9 @@ In tests this process completed in less than 10 mins, it is also possible to cre
 == Configure KUBECONFIG
 To access AWS on the command line, we need to use “opscore”,this is the same”opscore” we have used for interaction with AWS in the past, hence why we are not covering in any detail in this document.
 It should be noted  however that as well as running
+```bash
 opscore iam refresh --account cloudbees-ps --role infra-admin
+```
 I also found it necessary to export my profile name
 ```bash
 export AWS_PROFILE=cloudbees-ps
