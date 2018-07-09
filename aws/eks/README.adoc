@@ -1,0 +1,105 @@
+= AWS EKS Installation
+
+== Summary
+Released by AWS on 6th June 2018
+This offering provides a Kubernetes Cluster with minimal  differences to a bare metal, Kops or Kubeadm Cluster.
+
+Once the cluster is created, you add an ingress controller, create entries in Route 53 to point
+your dns to the load balancer, create a storage class and then install CJE.
+
+== Links
+
+https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html[AWS EKS Installation]
+
+https://go.cloudbees.com/docs/cloudbees-documentation/install-cje/eks-install/[CloudBees CJE installation]
+
+== EKS Creation Steps
+
+The following steps are explained in detail in the preceding links,
+please refer to those links for detailed information
+It is important that you login and switch to the same role for all the steps of the installation
+if you assume roles generally such as we do at CloudBees
+
+== Create a role
+Follow the step (Create your Amazon EKS Service Role) under pre-reqs https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-prereqs
+The process is a simple one, per AWS account you only need one role setup if you have multiple clusters.
+
+== Create a VPC using a Cloud Formation Template
+Follow the step (Create your Amazon EKS Cluster VPC) under pre-reqs
+https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-prereqs[]
+
+_It is possible to create your own VPC, however  there are considerations that need to be met. Using the provided template is obviously the easiest methods, however it will be likely that customers may want to install into an existing VPC._
+
+== Install Dependencies
+You need the following installed
+
+* kubectl version1.10 or greater
+* Heptio-authenticator-aws (latest version)
+* aws-cli version 1.15.32 or greater
+
+Ensure these are are all your path, for installation details refer to the AWS documentation
+
+
+
+== Create an EKS Cluster  in the VPC
+Follow the step (Step 1: Create Your Amazon EKS Cluster) at the following link to create your
+EKS Cluster https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-create-cluster .
+In tests this process completed in less than 10 mins, it is also possible to create via the CLI
+
+== Configure KUBECONFIG
+To access AWS on the command line, we need to use “opscore”,this is the same”opscore” we have used for interaction with AWS in the past, hence why we are not covering in any detail in this document.
+It should be noted  however that as well as running
+opscore iam refresh --account cloudbees-ps --role infra-admin
+I also found it necessary to export my profile name
+```bash
+export AWS_PROFILE=cloudbees-ps
+```
+Follow the step  (Step 2: Configure kubectl for Amazon EKS) at the following link to create a kubectl config
+https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-configure-kubectl
+
+Once configured you should be able to run
+```bash
+kubectl get svc
+```
+== Create Nodes using a  Cloud Formation Template
+You need to create a VPC that the cluster will use, there is a cloudformation template available that can be used
+Follow the step  (Step 3: Launch and Configure Amazon EKS Worker Nodes) at the following link to create the worker nodes
+https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-launch-workers
+
+== Join Nodes To Cluster
+You need to set up a configmap to join the nodes to the cluster
+Download the config map
+curl -O https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/aws-auth-cm.yaml
+
+Update the rolearn: with the ARN of the instance role, this is the NodeInstanceRole you recorded when creating the nodes in the previous section
+Then apply the config map
+kubectl apply -f aws-auth-cm.yaml
+
+== Install Ingress Controller
+You can install the ingress controller the same as you have done in the past
+with KOPS, Ive tested with L4 and L7 , see the link
+
+https://github.com/kubernetes/ingress-nginx/blob/master/docs/deploy/index.md#aws for options
+
+The next section and the links provided also explains the process of ingress controller installation
+
+== CJE Creation Steps
+The link https://go.cloudbees.com/docs/cloudbees-documentation/install-cje/eks-install/ clearly explains the steps to install CJE in EKS
+
+DNS ,Ingress controller are all very similar in EKS, pointing your dns at the appropriate load balancer, installing certs at the load balancer or at the IngressController are all supported
+
+== Other Considerations - Issues
+=== Autoscaling
+Now available at
+https://go.cloudbees.com/docs/cloudbees-documentation/install-cje/eks-install/#eks-auto-scaling
+
+=== Other points
+So far we have performed a simple installation, we need to:
+
+* Setting up different VPC with private and public subnets
+* Setting up cloud trail
+* Setting up additional users
+* POD networking options
+
+
+
