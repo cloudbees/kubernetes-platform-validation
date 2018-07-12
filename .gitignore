@@ -1,1 +1,6 @@
 */.DS_Store
+/cluster
+/kubeadm/*.log
+/kubeadm/k8s-key*
+/kubeadm/k8s_join_cmd
+/kubeadm/*.tfstate*
