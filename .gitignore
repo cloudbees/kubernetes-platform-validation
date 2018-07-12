@@ -4,3 +4,5 @@
 /kubeadm/k8s-key*
 /kubeadm/k8s_join_cmd
 /kubeadm/*.tfstate*
+.idea/
+kubernetes-platform-validation.iml

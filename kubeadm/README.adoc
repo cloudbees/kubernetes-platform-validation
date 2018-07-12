@@ -1,0 +1,10 @@
+# Installation CJE on Kubeadm Provisioned Kubernetes
+
+Installation of Kubernetes via Kubeadm tends to lend itself to an on-prem setup.
+The flavour of OS ideally would not make a difference, however from experience there are some challenges, hence why we have provided specific instructions for each.
+
+As you work through these examples, if you use a OS that is not documented, please add further instructions for reference.
+
+Examples so far are:
+
+* https://github.com/cloudbees/kubernetes-platform-validation/tree/master/kubeadm/centos[centos]
