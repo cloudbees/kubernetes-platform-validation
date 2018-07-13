@@ -2,6 +2,8 @@
 
 The goal of this document is to describe how to install a Kubernets cluster in **DigitalOcean** using **kubeadm**. Unlike AWS, GCE, and Azure, DigitalOcean does not offer many services and it's used mostly for spinning up VMs. As such, running a cluster in DigitalOcean is very close to what we'd experience when running a cluster **on-prem**, be it **bare metal or VMs** created with, for example, VMWare.
 
+The main goal of this document is NOT to suggest kubeadm as the best option to install and manage a Kubernetes cluster. Quite the contrary. There are many projects that provide higher level tools for that purpose. The real reason for using kubeadm is to understand in more detail how those tools work since they are using it in the background.
+
 You will be able to choose between **Ubuntu** and **CentOS** as operating systems. For storage, the instructions explain setup of a Kubernetes **NFS** client. We'll use Digital Ocean's load balancer. The logic behind its setup should be applicable to any other load balancer.
 
 Throughout the document, we'll have sets of validations aimed at confirming that the cluster is set up correctly and can be used to install **CJE**. Feel free to jump straight into validations if you already have an operational cluster. The validations are focused on **RBAC** and **ServiceAccounts**, **load balancers** and **Ingress**, and **storage**.
@@ -37,8 +39,6 @@ Please make sure that you have the following items.
 ## Setting Up External Storage
 
 We'll need a node on which we'll install NFS server that will serve as the solution for external storage. Feel free to create the node in any way and place you like. If you choose to host it in DigitalOcean, you might want to follow the instructions from the [Creating A Rancher Droplet](../rancher-do/droplet.md) document. Once finished, please return to this document.
-
-For simplicity, we'll set up an NFS server on the same node where Rancher is running. Please don't do that for in "real-world" situations. Rather, you should have one or more separate NFS servers dedicated to a Kubernetes cluster.
 
 The instructions that follow will require the IP of the NFS server.
 
@@ -279,3 +279,33 @@ kube-system   Active    10m
 ## Validating RBAC
 
 Please follow the instructions from the [Validating RBAC](../security/rbac-validate.md) document. Return here when finished.
+
+## Creating Ingress And Load Balancer
+
+### Creating Ingress
+
+```bash
+kubectl apply \
+    -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
+
+kubectl apply \
+    -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+
+HTTP_PORT=$(kubectl -n ingress-nginx \
+    get svc ingress-nginx \
+    -o jsonpath="{.spec.ports[?(@.name==\"http\")].nodePort}")
+
+echo $HTTP_PORT
+
+curl -i [WORKER_NODE_IP]:$HTTP_PORT/healthz
+```
+
+### Creating A Load Balancer
+
+We'll need to create an external load balancer (LB). It's purpose will be to guarantee a stable entry point to the cluster. Such an LB should forward requests to one of the worker nodes. There's no need to have any special criteria which worker node that is, as long as it's healthy. In other words, the external LB will guarantee that requests enter the cluster even if some of the nodes are down.
+
+Please follow the instructions in the [Creating A DigitalOcean Load Balancer](../rancher-do/lb.md) document.
+
+## Validating Load Balancer And Ingress
+
+Please follow the instructions from the [Validating Load Balancer And Ingress](../network/ingress-validate.md) document. Return here when finished.

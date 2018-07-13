@@ -112,6 +112,8 @@ kubectl delete \
     -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/ingress/go-demo-2.yml
 ```
 
+The output is as follows.
+
 ```
 ingress "go-demo-2" deleted
 deployment "go-demo-2-db" deleted
