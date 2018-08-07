@@ -28,7 +28,11 @@ The process is a simple one, per AWS account you only need one role setup if you
 Follow the step (Create your Amazon EKS Cluster VPC) under pre-reqs
 https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-prereqs[]
 
-_It is possible to create your own VPC, however  there are considerations that need to be met. Using the provided template is obviously the easiest methods, however it will be likely that customers may want to install into an existing VPC._
+_It is possible to create your own VPC, however  there are considerations that need to be met. Using the provided template is obviously the easiest methods, however it will be likely that customers may want to install into an existing VPC.
+See the following links for more information_
+
+https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html[]
+https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html[]
 
 == Install Dependencies
 You need the following installed
