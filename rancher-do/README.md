@@ -112,7 +112,7 @@ Now we are ready to set up Rancher.
 docker run -d \
     --restart=unless-stopped \
     -p 80:80 -p 443:443 \
-    rancher/server:preview
+    rancher/rancher:stable
 ```
 
 We used `-d` to run the container in background (detached). We specified `restart` strategy to `unless-stopped` which will guarantee that Docker will make sure that the container is running even if the process inside it fails. Please note that this strategy does not make your Rancher fault tolerant. If the node hosting our Rancher server goes down, we'd loose everything. However, for the purpose of this exercise, a single Rancher container should be enough.

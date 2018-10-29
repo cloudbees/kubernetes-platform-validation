@@ -1,184 +1,42 @@
 # Creating StorageClass with NFS Client Provisioner
 
-We already have an NFS server so the next step is to install NFS client as a StorageClass. We'll use [kubernetes nfs-client-provisioner](https://github.com/kubernetes-incubator/external-storage/tree/master/nfs-client).
+We already have an NFS server so the next step is to install NFS client as a StorageClass. We'll use [kubernetes nfs-client-provisioner](https://github.com/kubernetes-incubator/external-storage/tree/master/nfs-client). Given that the project provides a Helm Chart, we'll use it as it's the simplest way to install it.
 
-Since the provisioner will need to interact with Kube API and we have RBAC enabled, the first step is to create a ServiceAccount.
+If you do not have Helm client installed on your laptop, please follow the instructions from the [Installing The Helm Client](https://docs.helm.sh/using_helm/#installing-the-helm-client) documentation.
 
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/serviceaccount.yaml
-```
-
-The output is as follows.
-
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: nfs-client-provisioner
-```
-
-There's not much mistery in that ServiceAccount, so we'll go ahead and install it in the `cjoc` Namespace.
-
-```bash
-kubectl -n cjoc create \
-    -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/serviceaccount.yaml
-```
-
-The output is as follows.
-
-```
-serviceaccount "nfs-client-provisioner" created
-```
-
-Since ServiceAccount is useless by itself, we'll need a Role that will provide enough permissions.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/clusterrole.yaml
-```
-
-The output is as follows.
-
-```yaml
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: nfs-client-provisioner-runner
-rules:
-  - apiGroups: [""]
-    resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: [""]
-    resources: ["persistentvolumeclaims"]
-    verbs: ["get", "list", "watch", "update"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["list", "watch", "create", "update", "patch"]
-```
-
-We're creating a ClusterRole so that it can be reused for multiple NFS-related ServiceAccounts. It gives wide permissions for `persistentvolumes`, `persistentvolumeclaims`, and `events`, and read-only permissions for `storageclasses`.
-
-Let's create the ClusterRole.
+If your cluster does not have Tiller (Helm Server), please execute the commands that follow to install it.
 
 ```bash
 kubectl create \
-    -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/clusterrole.yaml
+    -f https://raw.githubusercontent.com/vfarcic/k8s-specs/master/helm/tiller-rbac.yml \
+    --record --save-config
+
+helm init --service-account tiller
+
+kubectl -n kube-system \
+    rollout status deploy tiller-deploy
 ```
 
-The output is as follows.
+We created a ServiceAccount with the required permissions and used it to install `tiller`. The last command validated that it rolled out correctly.
 
-```
-clusterrole "nfs-client-provisioner-runner" created
-```
-
-Finally, we need to connect the ServiceAccount with the ClusterRole.
+Now we're ready to install NFS Client Provisioner.
 
 ```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/clusterrolebinding.yaml
-```
-
-The output is as follows.
-
-```yaml
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: run-nfs-client-provisioner
-subjects:
-  - kind: ServiceAccount
-    name: nfs-client-provisioner
-    namespace: default
-roleRef:
-  kind: ClusterRole
-  name: nfs-client-provisioner-runner
-  apiGroup: rbac.authorization.k8s.io
-```
-
-That resource will bind the ClusterRole to the ServiceAccount. However, it has a slight problem. The Namespace is hard-coded. It assumes that the ServiceAccount is in the `default` Namespace while we created it in `cjoc`. We'll use  `sed` to modify it on-the-fly.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/auth/clusterrolebinding.yaml \
-    | sed -e "s@namespace: default@namespace: cjoc@g" \
-    | kubectl create -f -
-```
-
-The output is as follows.
-
-```
-clusterrolebinding "run-nfs-client-provisioner" created
-```
-
-Now we're ready to create the provisioner.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/deployment.yaml
-```
-
-The output is as follows.
-
-```yaml
-kind: Deployment
-apiVersion: extensions/v1beta1
-metadata:
-  name: nfs-client-provisioner
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: nfs-client-provisioner
-    spec:
-      serviceAccountName: nfs-client-provisioner
-      containers:
-        - name: nfs-client-provisioner
-          image: quay.io/external_storage/nfs-client-provisioner:latest
-          volumeMounts:
-            - name: nfs-client-root
-              mountPath: /persistentvolumes
-          env:
-            - name: PROVISIONER_NAME
-              value: fuseim.pri/ifs
-            - name: NFS_SERVER
-              value: 10.10.10.60
-            - name: NFS_PATH
-              value: /ifs/kubernetes
-      volumes:
-        - name: nfs-client-root
-          nfs:
-            server: 10.10.10.60
-            path: /ifs/kubernetes
-```
-
-That Deployment will register itself as a provisioner. It'll mount an NFS volume. Later on, we'll create a StorageClass that will use that provisioner which, in turn, will give each StorageClaim a separate directory inside that volume.
-
-You'll notice that quite a few things are hard-coded. We'll need to change the address of the server (`10.10.10.60`), the directory in the NFS server `/ifs/kubernetes`, as well as the name of the provisioner (`fuseim.pri/ifs`). It's important that the latter is unique since both the provisioner and the StorageClass are global so we cannot tie them to the `cjoc` Namespace. Since the idea is to use the NFS server dedicated to Jenkins, we need to keep the option of having other provisioners for other applications.
-
-Let's install it.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/deployment.yaml \
-    | sed -e "s@10.10.10.60@$NFS_SERVER_ADDR@g" \
-    | sed -e "s@/ifs/kubernetes@/var/nfs/cje@g" \
-    | sed -e "s@fuseim.pri/ifs@cloudbees.com/cje-nfs@g" \
-    | kubectl -n cjoc create -f -
-```
-
-The output is as follows.
-
-```
-deployment "nfs-client-provisioner" created
+helm install \
+  stable/nfs-client-provisioner \
+  --name nfs-client-provisioner \
+  --namespace kube-system \
+  --set nfs.server=$NFS_SERVER_ADDR \
+  --set nfs.path=/var/nfs/cje \
+  --set storageClass.provisionerName=cloudbees.com/cje-nfs
 ```
 
 We'll wait until the provisioner rolls out before we proceed.
 
 ```bash
-kubectl -n cjoc \
-    rollout status \
-    deploy nfs-client-provisioner
+kubectl -n kube-system \
+  rollout status \
+  deployment nfs-client-provisioner
 ```
 
 The output is as follows.
@@ -186,37 +44,6 @@ The output is as follows.
 ```
 Waiting for rollout to finish: 0 of 1 updated replicas are available...
 deployment "nfs-client-provisioner" successfully rolled out
-```
-
-We're missing only one more resource. We need to create a StorageClass that will use the provisioner we just installed.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/class.yaml
-```
-
-The output is as follows.
-
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: managed-nfs-storage
-provisioner: fuseim.pri/ifs # or choose another name, must match deployment's env PROVISIONER_NAME'
-```
-
-The StorageClass is fairly straightforward. It delegates all the heavy lifting to the provisioner. We just need to make sure that the `name` is meaningful for our use-case and that the `provisioner` matches the one we created previously.
-
-```bash
-curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/class.yaml \
-    | sed -e "s@managed-nfs-storage@cje-storage@g" \
-    | sed -e "s@fuseim.pri/ifs@cloudbees.com/cje-nfs@g" \
-    | kubectl -n cjoc create -f -
-```
-
-The output is as follows.
-
-```
-storageclass "cje-storage" created
 ```
 
 Finally, we can run a quick test to validate whether the provisioner works as expected.
@@ -242,11 +69,11 @@ spec:
       storage: 1Mi
 ```
 
-We'll create a new PersistentVolumeClaim. But, before we do that, we'll have to use `sed` magic to change the StorageClass to `cje-storage`.
+We'll create a new PersistentVolumeClaim. But, before we do that, we'll have to use `sed` magic to change the StorageClass to `nfs-client`.
 
 ```bash
 curl https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/nfs-client/deploy/test-claim.yaml \
-    | sed -e "s@managed-nfs-storage@cje-storage@g" \
+    | sed -e "s@managed-nfs-storage@nfs-client@g" \
     | kubectl -n cjoc create -f -
 ```
 
